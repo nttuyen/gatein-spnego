@@ -19,11 +19,9 @@
 package org.gatein.security.sso.spnego;
 
 import java.lang.reflect.Method;
-
 import javax.security.auth.login.LoginException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
-
 import org.exoplatform.container.ExoContainer;
 import org.exoplatform.services.log.ExoLogger;
 import org.exoplatform.services.log.Log;
@@ -31,24 +29,9 @@ import org.exoplatform.services.security.Authenticator;
 import org.exoplatform.services.security.Identity;
 import org.exoplatform.services.security.UsernameCredential;
 import org.exoplatform.services.security.jaas.AbstractLoginModule;
-import org.exoplatform.web.security.AuthenticationRegistry;
 
 public class SPNEGOLoginModule extends AbstractLoginModule {
     private static final Log log = ExoLogger.getLogger(SPNEGOLoginModule.class);
-
-   /* *//** JACC get context method. *//*
-    private static Method getContextMethod;
-
-    static {
-        try {
-            Class<?> policyContextClass = Thread.currentThread().getContextClassLoader().loadClass("javax.security.jacc.PolicyContext");
-            getContextMethod = policyContextClass.getDeclaredMethod("getContext", String.class);
-        } catch (ClassNotFoundException ignore) {
-            log.debug("JACC not found ignoring it", ignore);
-        } catch (Exception e) {
-            log.error("Could not obtain JACC get context method", e);
-        }
-    }*/
 
     @Override
     protected Log getLogger() {
@@ -66,8 +49,6 @@ public class SPNEGOLoginModule extends AbstractLoginModule {
                 return false;
             }
 
-            //AuthenticationRegistry registry = container.getComponentInstanceOfType(AuthenticationRegistry.class);
-            //String username = (String)registry.getAttributeOfClient(servletRequest, "SPNEGO_PRINCIPAL");
             HttpSession session = servletRequest.getSession();
             String username = (String)session.getAttribute("SPNEGO_PRINCIPAL");
             if(username != null) {
@@ -79,7 +60,7 @@ public class SPNEGOLoginModule extends AbstractLoginModule {
             }
 
         } catch (Exception ex) {
-            ex.printStackTrace();
+            log.error("Exception when trying to login with SPNEGO", ex);
         }
 
         return false;
@@ -119,26 +100,14 @@ public class SPNEGOLoginModule extends AbstractLoginModule {
     protected HttpServletRequest getCurrentHttpServletRequest() {
         HttpServletRequest request = null;
 
-//        // JBoss way
-//        if (getContextMethod != null) {
-//            try {
-//                request = (HttpServletRequest)getContextMethod.invoke(null, "javax.servlet.http.HttpServletRequest");
-//            } catch(Throwable e) {
-//                log.error("LoginModule error. Turn off session credentials checking with proper configuration option of " +
-//                        "LoginModule set to false");
-//                log.error(this, e);
-//            }
-//        } else {
-            // Tomcat way (Assumed that ServletAccessValve has been configured in context.xml)
-            try {
-                // TODO: improve this
-                Class<?> clazz = Thread.currentThread().getContextClassLoader().loadClass("org.gatein.sso.agent.tomcat.ServletAccess");
-                Method getRequestMethod = clazz.getDeclaredMethod("getRequest");
-                request = (HttpServletRequest)getRequestMethod.invoke(null);
-            } catch (Exception e) {
-                log.error("Unexpected exception when trying to obtain HttpServletRequest from ServletAccess thread-local", e);
-            }
-//        }
+        try {
+            // TODO: improve this
+            Class<?> clazz = Thread.currentThread().getContextClassLoader().loadClass("org.gatein.sso.agent.tomcat.ServletAccess");
+            Method getRequestMethod = clazz.getDeclaredMethod("getRequest");
+            request = (HttpServletRequest)getRequestMethod.invoke(null);
+        } catch (Exception e) {
+            log.error("Unexpected exception when trying to obtain HttpServletRequest from ServletAccess thread-local", e);
+        }
 
         if (log.isTraceEnabled()) {
             log.trace("Returning HttpServletRequest " + request);

@@ -34,12 +34,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.exoplatform.container.ExoContainer;
-import org.exoplatform.container.ExoContainerContext;
 import org.exoplatform.services.log.ExoLogger;
 import org.exoplatform.services.log.Log;
 import org.exoplatform.web.filter.Filter;
-import org.exoplatform.web.security.AuthenticationRegistry;
 import org.ietf.jgss.GSSContext;
 import org.ietf.jgss.GSSCredential;
 import org.ietf.jgss.GSSException;
@@ -90,7 +87,7 @@ public class SPNEGOFilter implements Filter {
             }
         }
 
-        if(principal != null) {
+        if(principal != null && !principal.isEmpty()) {
             username = principal.substring(0, principal.indexOf('@'));
             // We don't need user password when he login using SSO (SPNEGO)
             // But LoginServlet require password is not empty to call login action instead of display input form
@@ -100,12 +97,7 @@ public class SPNEGOFilter implements Filter {
             HttpSession session = req.getSession();
             session.setAttribute("SPNEGO_PRINCIPAL", username);
 
-            ExoContainer container = ExoContainerContext.getCurrentContainer();
-            AuthenticationRegistry registry = container.getComponentInstanceOfType(AuthenticationRegistry.class);
-            //registry.setAttributeOfClient(req, "SPNEGO_PRINCIPAL", username);
-
             resp.sendRedirect(loginURL + "?username=" + username + "&password=" + password);
-
         } else {
             if(!loginURL.equalsIgnoreCase(requestURL)) {
                 RequestDispatcher dispatcher = req.getRequestDispatcher("/login");
