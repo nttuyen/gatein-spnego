@@ -31,6 +31,7 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
@@ -68,6 +69,7 @@ public class SPNEGOFilter implements Filter {
         final HttpServletResponse resp = (HttpServletResponse)response;
         final String contextPath = req.getContextPath();
         final String loginURL = contextPath + "/login";
+        SPNEGOContext.setCurrentRequest(req);
 
         String requestURL = req.getRequestURI();
         String username = req.getParameter("username");
@@ -97,7 +99,17 @@ public class SPNEGOFilter implements Filter {
             HttpSession session = req.getSession();
             session.setAttribute("SPNEGO_PRINCIPAL", username);
 
-            resp.sendRedirect(loginURL + "?username=" + username + "&password=" + password);
+            StringBuilder login = new StringBuilder(loginURL)
+                    .append("?username=")
+                    .append(username)
+                    .append("&password=")
+                    .append(password);
+            String initURL = req.getParameter("initialURI");
+            if(initURL != null) {
+                login.append("&initialURI=").append(initURL);
+            }
+
+            resp.sendRedirect(login.toString());
         } else {
             if(!loginURL.equalsIgnoreCase(requestURL)) {
                 RequestDispatcher dispatcher = req.getRequestDispatcher("/login");

@@ -18,7 +18,6 @@
  */
 package org.gatein.security.sso.spnego;
 
-import java.lang.reflect.Method;
 import javax.security.auth.login.LoginException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -43,7 +42,7 @@ public class SPNEGOLoginModule extends AbstractLoginModule {
         try {
             ExoContainer container = getContainer();
 
-            HttpServletRequest servletRequest = getCurrentHttpServletRequest();
+            HttpServletRequest servletRequest = SPNEGOContext.getCurrentRequest();
             if (servletRequest == null) {
                 log.debug("HttpServletRequest is null. SPNEGOLoginModule will be ignored.");
                 return false;
@@ -93,26 +92,5 @@ public class SPNEGOLoginModule extends AbstractLoginModule {
         sharedState.put("exo.security.identity", identity);
         sharedState.put("javax.security.auth.login.name", username);
         subject.getPublicCredentials().add(new UsernameCredential(username));
-    }
-
-
-    // Forked from SSOLoginModule
-    protected HttpServletRequest getCurrentHttpServletRequest() {
-        HttpServletRequest request = null;
-
-        try {
-            // TODO: improve this
-            Class<?> clazz = Thread.currentThread().getContextClassLoader().loadClass("org.gatein.sso.agent.tomcat.ServletAccess");
-            Method getRequestMethod = clazz.getDeclaredMethod("getRequest");
-            request = (HttpServletRequest)getRequestMethod.invoke(null);
-        } catch (Exception e) {
-            log.error("Unexpected exception when trying to obtain HttpServletRequest from ServletAccess thread-local", e);
-        }
-
-        if (log.isTraceEnabled()) {
-            log.trace("Returning HttpServletRequest " + request);
-        }
-
-        return request;
     }
 }

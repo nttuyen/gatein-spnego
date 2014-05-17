@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF8"?>
+<?xml version="1.0" encoding="ISO-8859-1"?>
 <!--
 
     Copyright (C) 2009 eXo Platform SAS.
@@ -23,31 +23,25 @@
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                xsi:schemaLocation="http://www.exoplaform.org/xml/ns/kernel_1_2.xsd http://www.exoplaform.org/xml/ns/kernel_1_2.xsd"
                xmlns="http://www.exoplaform.org/xml/ns/kernel_1_2.xsd">
-
   <external-component-plugins>
-    <!-- The full qualified name of the PortalContainerConfig -->
-    <target-component>org.exoplatform.container.definition.PortalContainerConfig</target-component>
+    <target-component>org.exoplatform.web.filter.ExtensibleFilter</target-component>
     <component-plugin>
-      <!-- The name of the plugin -->
-      <name>Add PortalContainer Definitions</name>
-      <!-- The name of the method to call on the PortalContainerConfig in order to register the PortalContainerDefinitions -->
-      <set-method>registerChangePlugin</set-method>
-      <!-- The full qualified name of the PortalContainerDefinitionPlugin -->
-      <type>org.exoplatform.container.definition.PortalContainerDefinitionChangePlugin</type>
-      <priority>101</priority>
+      <name>SPNEGO filter Plugin</name>
+      <set-method>addFilterDefinitions</set-method>
+      <type>org.exoplatform.web.filter.FilterDefinitionPlugin</type>
       <init-params>
-        <values-param>
-          <name>apply.specific</name>
-          <value>portal</value>
-        </values-param>
         <object-param>
-          <name>addDependencies</name>
-          <object type="org.exoplatform.container.definition.PortalContainerDefinitionChange$AddDependencies">
-            <!-- The name of the portal container -->
-            <field name="dependencies">
-              <collection type="java.util.ArrayList">
+          <name>SPNEGO Filter</name>
+          <object type="org.exoplatform.web.filter.FilterDefinition">
+            <field name="filter"><object type="org.gatein.security.sso.spnego.SPNEGOFilter"/></field>
+            <field name="patterns">
+              <!-- WARNING: the mapping is expressed with regular expressions -->
+              <collection type="java.util.ArrayList" item-type="java.lang.String">
                 <value>
-                  <string>spnego-extension</string>
+                  <string>/spnegosso</string>
+                </value>
+                <value>
+                  <string>/login</string>
                 </value>
               </collection>
             </field>
@@ -56,6 +50,4 @@
       </init-params>
     </component-plugin>
   </external-component-plugins>
-
-  <!--<import>jar:/conf/spnego/spnego_configuration.xml</import>-->
 </configuration>
