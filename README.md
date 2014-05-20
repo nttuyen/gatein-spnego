@@ -5,11 +5,10 @@ SPNEGO SSO implement for gatein tomcat packaging
 1. Configure SPNEGO Server
   You configure SPNEGO server follow the guideline at gatein document: https://docs.jboss.org/author/display/GTNPORTAL37/SPNEGO
 
-2. Build and deploy spnego extension
-  - Use maven to build spnego-jar and spnego-extension project
-  - Copy spnego-jar.jar to $GATEIN_TOMCAT/lib folder
-  - Copy spnego-extension.war to $GATEIN_TOMCAT/webapps folder
-  
+2. Build and deploy gatein-spnego
+  - Use maven to build gatein-spnego project
+  - Copy gatein-spnego-${VERSION}.jar to $GATEIN_TOMCAT/lib folder
+
 3. Configure gatein
   - Append this login module configuration into $GATEIN_HOME/conf/jaas.conf
 ```
@@ -37,19 +36,5 @@ gatein.sso.filter.login.sso.url=/@@portal.container.name@@/spnegosso
 gatein.sso.filter.initiatelogin.enabled=false
 gatein.sso.valve.enabled=false
 gatein.sso.filter.logout.enabled=false
-```
-  
-  - Add `ServletAccessValve` into file $GATEIN_HOME/conf/context.xml, file context.xml should be like this:
-  
-```
-<!-- The contents of this file will be loaded for each web application -->
-<Context>
-
-    <Valve className="org.gatein.sso.agent.tomcat.ServletAccessValve" />
-
-    <!-- Default set of monitored resources -->
-    <WatchedResource>WEB-INF/web.xml</WatchedResource>
-    ....
-    
 ```
 

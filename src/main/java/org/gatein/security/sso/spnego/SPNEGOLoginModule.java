@@ -32,6 +32,8 @@ import org.exoplatform.services.security.jaas.AbstractLoginModule;
 public class SPNEGOLoginModule extends AbstractLoginModule {
     private static final Log log = ExoLogger.getLogger(SPNEGOLoginModule.class);
 
+    public static final String OPTION_ENABLE_FALLBACK_FORM_AUTHENTICATION = "enableFormAuthentication";
+
     @Override
     protected Log getLogger() {
         return log;
@@ -60,6 +62,11 @@ public class SPNEGOLoginModule extends AbstractLoginModule {
 
         } catch (Exception ex) {
             log.error("Exception when trying to login with SPNEGO", ex);
+        }
+
+        // Disable fallback to FORM authentication
+        if("false".equalsIgnoreCase((String)this.options.get(OPTION_ENABLE_FALLBACK_FORM_AUTHENTICATION))) {
+            throw new LoginException("FORM authentication was disabled by SPNEGO login module.");
         }
 
         return false;
