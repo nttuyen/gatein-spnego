@@ -20,7 +20,7 @@ package org.gatein.security.sso.spnego;
 
 import javax.servlet.http.HttpServletRequest;
 
-public class SPNEGOContext {
+public class SPNEGOSSOContext {
     private static ThreadLocal<HttpServletRequest> currentRequest = new ThreadLocal<HttpServletRequest>();
 
     public static void setCurrentRequest(HttpServletRequest req) {

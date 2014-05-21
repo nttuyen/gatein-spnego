@@ -29,8 +29,8 @@ import org.exoplatform.services.security.Identity;
 import org.exoplatform.services.security.UsernameCredential;
 import org.exoplatform.services.security.jaas.AbstractLoginModule;
 
-public class SPNEGOLoginModule extends AbstractLoginModule {
-    private static final Log log = ExoLogger.getLogger(SPNEGOLoginModule.class);
+public class SPNEGOSSOLoginModule extends AbstractLoginModule {
+    private static final Log log = ExoLogger.getLogger(SPNEGOSSOLoginModule.class);
 
     public static final String OPTION_ENABLE_FALLBACK_FORM_AUTHENTICATION = "enableFormAuthentication";
 
@@ -44,7 +44,7 @@ public class SPNEGOLoginModule extends AbstractLoginModule {
         try {
             ExoContainer container = getContainer();
 
-            HttpServletRequest servletRequest = SPNEGOContext.getCurrentRequest();
+            HttpServletRequest servletRequest = SPNEGOSSOContext.getCurrentRequest();
             if (servletRequest == null) {
                 log.debug("HttpServletRequest is null. SPNEGOLoginModule will be ignored.");
                 return false;

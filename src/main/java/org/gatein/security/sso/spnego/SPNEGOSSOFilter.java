@@ -34,8 +34,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.exoplatform.services.log.ExoLogger;
-import org.exoplatform.services.log.Log;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.exoplatform.web.filter.Filter;
 import org.ietf.jgss.GSSContext;
 import org.ietf.jgss.GSSCredential;
@@ -45,15 +45,15 @@ import org.ietf.jgss.Oid;
 import sun.misc.BASE64Decoder;
 import sun.misc.BASE64Encoder;
 
-public class SPNEGOFilter implements Filter {
-    private static final Log log = ExoLogger.getLogger(SPNEGOLoginModule.class);
+public class SPNEGOSSOFilter implements Filter {
+    private static final Log log = LogFactory.getLog(SPNEGOSSOFilter.class);
     private static final GSSManager MANAGER = GSSManager.getInstance();
     private static final BASE64Encoder base64Encoder = new BASE64Encoder();
     private static final BASE64Decoder base64Decoder = new BASE64Decoder();
 
     private LoginContext loginContext;
 
-    public SPNEGOFilter() {
+    public SPNEGOSSOFilter() {
         try {
             this.loginContext = new LoginContext("spnego-server");
             loginContext.login();
@@ -68,13 +68,23 @@ public class SPNEGOFilter implements Filter {
         final HttpServletResponse resp = (HttpServletResponse)response;
         final String contextPath = req.getContextPath();
         final String loginURL = contextPath + "/login";
-        SPNEGOContext.setCurrentRequest(req);
+        SPNEGOSSOContext.setCurrentRequest(req);
 
         String requestURL = req.getRequestURI();
         String username = req.getParameter("username");
         String remoteUser = req.getRemoteUser();
         if(username != null || remoteUser != null) {
-            chain.doFilter(req, resp);
+            if(!loginURL.equalsIgnoreCase(requestURL)) {
+                // Redirect to /login if current request is /spnegosso to avoid error 404
+                // when user access to /spnegosso?username=username or when loggedIn user access to /spengosso
+                StringBuilder login = new StringBuilder(loginURL);
+                if(req.getQueryString() != null) {
+                    login.append("?").append(req.getQueryString());
+                }
+                resp.sendRedirect(login.toString());
+            } else {
+                chain.doFilter(req, resp);
+            }
             return;
         }
 

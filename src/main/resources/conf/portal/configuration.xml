@@ -33,7 +33,7 @@
         <object-param>
           <name>SPNEGO Filter</name>
           <object type="org.exoplatform.web.filter.FilterDefinition">
-            <field name="filter"><object type="org.gatein.security.sso.spnego.SPNEGOFilter"/></field>
+            <field name="filter"><object type="org.gatein.security.sso.spnego.SPNEGOSSOFilter"/></field>
             <field name="patterns">
               <!-- WARNING: the mapping is expressed with regular expressions -->
               <collection type="java.util.ArrayList" item-type="java.lang.String">
