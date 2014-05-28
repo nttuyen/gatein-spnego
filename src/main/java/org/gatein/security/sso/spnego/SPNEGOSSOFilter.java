@@ -22,9 +22,9 @@ import java.io.IOException;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.UUID;
-
 import javax.security.auth.Subject;
 import javax.security.auth.login.LoginContext;
+import javax.security.auth.login.LoginException;
 import javax.servlet.FilterChain;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -33,32 +33,49 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.exoplatform.web.filter.Filter;
+import org.gatein.common.logging.Logger;
+import org.gatein.common.logging.LoggerFactory;
+import org.gatein.common.util.Base64;
+import org.gatein.sso.agent.filter.api.AbstractSSOInterceptor;
 import org.ietf.jgss.GSSContext;
 import org.ietf.jgss.GSSCredential;
 import org.ietf.jgss.GSSException;
 import org.ietf.jgss.GSSManager;
 import org.ietf.jgss.Oid;
-import sun.misc.BASE64Decoder;
-import sun.misc.BASE64Encoder;
 
-public class SPNEGOSSOFilter implements Filter {
-    private static final Log log = LogFactory.getLog(SPNEGOSSOFilter.class);
+public class SPNEGOSSOFilter extends AbstractSSOInterceptor {
+    private static final Logger log = LoggerFactory.getLogger(AbstractSSOInterceptor.class);
+
     private static final GSSManager MANAGER = GSSManager.getInstance();
-    private static final BASE64Encoder base64Encoder = new BASE64Encoder();
-    private static final BASE64Decoder base64Decoder = new BASE64Decoder();
 
     private LoginContext loginContext;
+    private String[] patterns = {"/login", "/spnegosso"};
+    private String loginServletPath = "/login";
+    private String securityDomain = "spnego-server";
 
-    public SPNEGOSSOFilter() {
+    public SPNEGOSSOFilter() {}
+
+    @Override
+    protected void initImpl() {
+        String patternParam = this.getInitParameter("patterns");
+        if(patternParam != null && !patternParam.isEmpty()) {
+            this.patterns = patternParam.split(",");
+        }
+
+        String loginServlet = this.getInitParameter("loginServletPath");
+        if(loginServlet != null && !loginServlet.isEmpty()) {
+            this.loginServletPath = loginServlet;
+        }
+
+        String domain = this.getInitParameter("securityDomain");
+        if(domain != null && !domain.isEmpty()) {
+            this.securityDomain = domain;
+        }
+
         try {
-            this.loginContext = new LoginContext("spnego-server");
-            loginContext.login();
-        } catch (Exception ex) {
-            log.warn("Exception when init LoginContext, so SPNEGO SSO login will not work", ex);
+            this.loginContext = new LoginContext(this.securityDomain);
+        } catch (LoginException ex) {
+            log.warn("Exception while init LoginContext, so SPNEGO SSO will not work", ex);
         }
     }
 
@@ -66,18 +83,25 @@ public class SPNEGOSSOFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         final HttpServletRequest req = (HttpServletRequest)request;
         final HttpServletResponse resp = (HttpServletResponse)response;
-        final String contextPath = req.getContextPath();
-        final String loginURL = contextPath + "/login";
-        SPNEGOSSOContext.setCurrentRequest(req);
 
-        String requestURL = req.getRequestURI();
+        //. Check if this is not spnego login request
+        if(!isSpnegoLoginRequest(req)) {
+            chain.doFilter(request, response);
+            return;
+        }
+
+        SPNEGOSSOContext.setCurrentRequest(req);
+        final String contextPath = req.getContextPath();
+        final String loginURI = contextPath + this.loginServletPath;
+        final String requestURI = req.getRequestURI();
         String username = req.getParameter("username");
-        String remoteUser = req.getRemoteUser();
+        final String remoteUser = req.getRemoteUser();
+
         if(username != null || remoteUser != null) {
-            if(!loginURL.equalsIgnoreCase(requestURL)) {
+            if(!loginURI.equalsIgnoreCase(requestURI)) {
                 // Redirect to /login if current request is /spnegosso to avoid error 404
                 // when user access to /spnegosso?username=username or when loggedIn user access to /spengosso
-                StringBuilder login = new StringBuilder(loginURL);
+                StringBuilder login = new StringBuilder(loginURI);
                 if(req.getQueryString() != null) {
                     login.append("?").append(req.getQueryString());
                 }
@@ -89,7 +113,7 @@ public class SPNEGOSSOFilter implements Filter {
         }
 
         String principal = null;
-        String auth = req.getHeader("Authorization");
+        final String auth = req.getHeader("Authorization");
         if(auth != null) {
             try {
                 principal = this.login(req, resp, auth);
@@ -108,7 +132,7 @@ public class SPNEGOSSOFilter implements Filter {
             HttpSession session = req.getSession();
             session.setAttribute("SPNEGO_PRINCIPAL", username);
 
-            StringBuilder login = new StringBuilder(loginURL)
+            StringBuilder login = new StringBuilder(loginURI)
                     .append("?username=")
                     .append(username)
                     .append("&password=")
@@ -120,7 +144,7 @@ public class SPNEGOSSOFilter implements Filter {
 
             resp.sendRedirect(login.toString());
         } else {
-            if(!loginURL.equalsIgnoreCase(requestURL)) {
+            if(!loginURI.equals(requestURI)) {
                 RequestDispatcher dispatcher = req.getRequestDispatcher("/login");
                 dispatcher.include(req, resp);
             } else {
@@ -131,15 +155,26 @@ public class SPNEGOSSOFilter implements Filter {
         }
     }
 
+    private boolean isSpnegoLoginRequest(HttpServletRequest request) {
+        final String uri = request.getRequestURI();
+        final String context = request.getContextPath();
+        for(String pattern : this.patterns) {
+            if(uri.equals(context.concat(pattern))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private String login(HttpServletRequest req, HttpServletResponse resp, String auth) throws Exception {
         if(this.loginContext == null) {
             return null;
         }
+        this.loginContext.login();
 
         final String principal;
         final String tok = auth.substring("Negotiate".length() + 1);
-        final byte[] gss = base64Decoder.decodeBuffer(tok);
-
+        final byte[] gss = Base64.decode(tok);
 
         GSSContext context = null;
         byte[] token = null;
@@ -150,7 +185,7 @@ public class SPNEGOSSOFilter implements Filter {
             return null;
         }
 
-        resp.setHeader("WWW-Authenticate", "Negotiate" + ' ' + base64Encoder.encode(token));
+        resp.setHeader("WWW-Authenticate", "Negotiate" + ' ' + Base64.encodeBytes(token));
 
         if (!context.isEstablished()) {
             resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -159,6 +194,8 @@ public class SPNEGOSSOFilter implements Filter {
 
         principal = context.getSrcName().toString();
         context.dispose();
+
+        this.loginContext.logout();
 
         return principal;
     }
@@ -202,4 +239,7 @@ public class SPNEGOSSOFilter implements Filter {
         }
         return oid;
     }
+
+    @Override
+    public void destroy() {}
 }

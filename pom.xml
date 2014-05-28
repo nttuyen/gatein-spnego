@@ -7,20 +7,18 @@
   <parent>
     <groupId>org.gatein.sso</groupId>
     <artifactId>sso-parent</artifactId>
-    <version>1.4.2.Final-SNAPSHOT</version>
+    <version>1.4.3.Final-SNAPSHOT</version>
   </parent>
   <artifactId>gatein-spnego</artifactId>
 
   <dependencies>
     <dependency>
-      <groupId>org.gatein.portal</groupId>
-      <artifactId>exo.portal.component.web.api</artifactId>
-      <version>3.7.0.Final</version>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.gatein.portal</groupId>
-      <artifactId>exo.portal.component.web.security</artifactId>
-      <version>3.7.0.Final</version>
+      <groupId>org.gatein.sso</groupId>
+      <artifactId>sso-agent</artifactId>
     </dependency>
   </dependencies>
 

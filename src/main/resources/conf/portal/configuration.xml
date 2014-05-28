@@ -24,29 +24,37 @@
                xsi:schemaLocation="http://www.exoplaform.org/xml/ns/kernel_1_2.xsd http://www.exoplaform.org/xml/ns/kernel_1_2.xsd"
                xmlns="http://www.exoplaform.org/xml/ns/kernel_1_2.xsd">
   <external-component-plugins>
-    <target-component>org.exoplatform.web.filter.ExtensibleFilter</target-component>
+    <target-component>org.gatein.sso.integration.SSOFilterIntegrator</target-component>
     <component-plugin>
-      <name>SPNEGO filter Plugin</name>
-      <set-method>addFilterDefinitions</set-method>
-      <type>org.exoplatform.web.filter.FilterDefinitionPlugin</type>
+      <name>InitiateLoginFilter</name>
+      <set-method>addPlugin</set-method>
+      <type>org.gatein.sso.integration.SSOFilterIntegratorPlugin</type>
       <init-params>
-        <object-param>
-          <name>SPNEGO Filter</name>
-          <object type="org.exoplatform.web.filter.FilterDefinition">
-            <field name="filter"><object type="org.gatein.security.sso.spnego.SPNEGOSSOFilter"/></field>
-            <field name="patterns">
-              <!-- WARNING: the mapping is expressed with regular expressions -->
-              <collection type="java.util.ArrayList" item-type="java.lang.String">
-                <value>
-                  <string>/spnegosso</string>
-                </value>
-                <value>
-                  <string>/login</string>
-                </value>
-              </collection>
-            </field>
-          </object>
-        </object-param>
+        <value-param>
+          <name>filterClass</name>
+          <value>org.gatein.security.sso.spnego.SPNEGOSSOFilter</value>
+        </value-param>
+        <value-param>
+          <name>enabled</name>
+          <value>${gatein.sso.filter.spnego.enabled:false}</value>
+        </value-param>
+        <value-param>
+          <name>filterMapping</name>
+          <value>/*</value>
+        </value-param>
+
+        <value-param>
+          <name>patterns</name>
+          <value>${gatein.sso.filter.spnego.pattern:/login,/spnegosso}</value>
+        </value-param>
+        <value-param>
+          <name>loginServletPath</name>
+          <value>${gatein.sso.filter.spnego.loginServletPath:/login}</value>
+        </value-param>
+        <value-param>
+          <name>securityDomain</name>
+          <value>${gatein.sso.filter.spnego.securityDomain:spnego-server}</value>
+        </value-param>
       </init-params>
     </component-plugin>
   </external-component-plugins>
