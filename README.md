@@ -28,6 +28,7 @@ spnego-server {
   - Change SSO section in the file $GATEIN_HOME/gatein/conf/configuration.properties to be like this:
 ```
 gatein.sso.enabled=true
+gatein.sso.filter.spnego.enabled=true
 gatein.sso.callback.enabled=false
 gatein.sso.skip.jsp.redirection=false
 gatein.sso.login.module.enabled=true
